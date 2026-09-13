@@ -9,6 +9,10 @@ On the next push it diffs that commit against `HEAD` and transfers exactly the
 files that were added, modified or deleted, in parallel. No server-side
 software is needed.
 
+If your server forbids writing dot-files (some hardened FTP servers reject any
+name starting with a `.`), set a non-dot-file name with
+`git config git-ftp.deployedsha1file gitftp.log`.
+
 This port reads the same configuration and the same remote files as the Bash
 original, so an existing deployment carries over unchanged. It needs Python 3.10
 or newer and `git`; libcurl comes bundled with the `pycurl` wheel and SFTP is
