@@ -248,20 +248,26 @@ class SftpServer:
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._accept_loop, name="sftpd", daemon=True)
 
+    def _serve(self, conn: socket.socket) -> None:
+        # Each connection is handshaked on its own thread so a client that connects
+        # and then drops (e.g. an encrypted key with no passphrase) cannot delay or
+        # perturb the next connection's key exchange.
+        t = paramiko.Transport(conn)
+        t.add_server_key(self.host_key)
+        t.set_subsystem_handler("sftp", SFTPServer, _Fs, root=self.root, owner=self)
+        self._transports.append(t)
+        try:
+            t.start_server(server=_Auth(self))
+        except Exception:  # a dropped/aborted client must not crash the server
+            t.close()
+
     def _accept_loop(self) -> None:
         while not self._stop.is_set():
             try:
                 conn, _ = self._sock.accept()
             except OSError:
                 return
-            t = paramiko.Transport(conn)
-            t.add_server_key(self.host_key)
-            t.set_subsystem_handler("sftp", SFTPServer, _Fs, root=self.root, owner=self)
-            try:
-                t.start_server(server=_Auth(self))
-            except paramiko.SSHException:
-                continue
-            self._transports.append(t)
+            threading.Thread(target=self._serve, args=(conn,), daemon=True).start()
 
     def start(self) -> SftpServer:
         self._thread.start()
