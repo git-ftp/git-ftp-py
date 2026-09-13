@@ -83,6 +83,7 @@ class SftpTransport(Transport):
         self.dircache = dircache or DirCache()
         self._transport: Any = None
         self._sftp: Any = None
+        self._loaded_key: Any = None
 
     # -- lifecycle ---------------------------------------------------------
     def open(self) -> None:
@@ -90,6 +91,11 @@ class SftpTransport(Transport):
 
         host = self.url.hostname
         port = self.url.port or DEFAULT_PORT
+        # Load the private key before opening the socket: a locked key with no
+        # passphrase should fail fast without a pointless connection (and without
+        # leaving a half-open session on the server).
+        if self.creds.key:
+            self._loaded_key = self._load_private_key()
         if self.options.trace is not None:
             logger = logging.getLogger("paramiko.transport")
             logger.setLevel(logging.DEBUG)
@@ -233,7 +239,7 @@ class SftpTransport(Transport):
             user = getpass.getuser()
         errors: list[str] = []
         if self.creds.key:
-            key = self._load_private_key()
+            key = self._loaded_key if self._loaded_key is not None else self._load_private_key()
             try:
                 t.auth_publickey(user, key)
                 return
