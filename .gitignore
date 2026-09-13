@@ -1,0 +1,17 @@
+/src/gitftp/_version.py
+/dist/
+/build/
+/out/
+/.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+junit.xml
+htmlcov/
+.git-ftp*-tmp

@@ -1,0 +1,19 @@
+"""The init action."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import click
+
+from gitftp import deploy
+from gitftp.cli.options import common_options, session_for, url_argument
+
+
+@click.command("init", short_help="Upload all files and record the commit (first deployment).")
+@common_options
+@url_argument
+@click.pass_context
+def command(ctx: click.Context, /, url: str | None, **kw: Any) -> None:
+    opts, session = session_for(ctx, url, kw)
+    deploy.run(deploy.Action.INIT, session, deploy.DeployOptions.from_cli(opts))

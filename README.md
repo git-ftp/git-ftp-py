@@ -1,0 +1,166 @@
+# git-ftp (Python)
+
+This is a native Python port of the Bash [git-ftp](https://github.com/git-ftp/git-ftp): deploy a
+Git repository to a server over **FTP, FTPS, FTPES or SFTP**, uploading only the
+files that changed since the last deployment.
+
+git-ftp records the deployed commit in a file on the remote (`.git-ftp.log`).
+On the next push it diffs that commit against `HEAD` and transfers exactly the
+files that were added, modified or deleted, in parallel. No server-side
+software is needed.
+
+This port reads the same configuration and the same remote files as the Bash
+original, so an existing deployment carries over unchanged. It needs Python 3.10
+or newer and `git`; libcurl comes bundled with the `pycurl` wheel and SFTP is
+spoken by `paramiko`. See [COMPATIBILITY.md](COMPATIBILITY.md) for what was
+kept, fixed and added.
+
+## Install
+
+```sh
+uv tool install git-ftp      # or: pipx install git-ftp, pip install git-ftp
+git ftp --version
+```
+
+Git runs the `git-ftp` script as `git ftp` when it is on your `PATH`.
+
+## Usage
+
+```sh
+# First deployment: upload everything and record the commit.
+git ftp init -u alice -P ftp://example.com/public_html
+
+# Every deployment after that: only what changed.
+git ftp push -u alice -P ftp://example.com/public_html
+
+# The remote already has the current files? Just record the commit.
+git ftp catchup ftp://example.com/public_html
+
+# What is deployed?
+git ftp show
+git ftp log
+```
+
+`-P` prompts for the password. Better than typing it every time:
+
+```sh
+git config git-ftp.url ftp://example.com/public_html
+git config git-ftp.user alice
+git config git-ftp.password s3cret                    # or:
+git config git-ftp.password-command "pass show example.com/ftp"
+git ftp push
+```
+
+In CI, `GIT_FTP_URL`, `GIT_FTP_USER` and `GIT_FTP_PASSWORD` do the same without
+touching any file.
+
+### Scopes
+
+Several targets in one repository:
+
+```sh
+git ftp add-scope production ftp://alice:s3cret@live.example.com/htdocs
+git ftp add-scope staging   ftp://alice:s3cret@staging.example.com/htdocs
+git ftp push -s production
+git ftp push -s             # bare -s: the current branch name is the scope
+```
+
+Scope keys (`git-ftp.<scope>.<key>`) override the plain keys; an explicit empty
+scope value masks the default.
+
+### Protocols
+
+| URL | Transport | Encryption |
+|---|---|---|
+| `ftp://host/path` | libcurl | none |
+| `ftpes://host/path` | libcurl | explicit TLS (`AUTH TLS`), data channel too |
+| `ftps://host/path` | libcurl | implicit TLS (port 990) |
+| `sftp://host/path` | paramiko | SSH |
+
+TLS certificates are verified; use `--cacert FILE` for a private CA or
+`--insecure` to skip verification. SFTP host keys are checked against
+`~/.ssh/known_hosts` (`ssh-keyscan host >> ~/.ssh/known_hosts` to add one).
+SFTP authenticates with `--key FILE` (`--key-passphrase` for encrypted keys),
+a running `ssh-agent`, or a password. `sftp://host/~/dir` and
+`sftp://host//absolute/dir` work as in curl.
+
+### Choosing what to deploy
+
+- `--syncroot DIR` deploys only `DIR`, with `DIR` as the remote root.
+- `.git-ftp-ignore` lists shell globs of Git paths never to upload (`*` also
+  matches `/`, and a pattern must match the whole path).
+- `.git-ftp-include` uploads untracked files: `!VERSION.txt` always, or
+  `css/style.css:scss/style.scss` whenever the tracked source changed. A
+  directory target (`vendor/:composer.lock`) uploads everything below it.
+- `--dry-run` shows the plan; `-a` uploads everything; `-c SHA` diffs against
+  a specific commit; `-b BRANCH` deploys another branch.
+
+### Parallel transfers
+
+Files are transferred over up to four connections. `--jobs N` or
+`git config git-ftp.jobs N` changes that; `--jobs 1` is sequential. Uploads
+happen first, then deletes, and the commit log is written last, only when every
+upload succeeded, so an interrupted deploy never claims a commit it did not
+finish. Ctrl-C stops promptly.
+
+### Hooks and locking
+
+`.git/hooks/pre-ftp-push` (veto with a non-zero exit; skipped by `--no-verify`)
+and `post-ftp-push` (`--enable-post-errors` makes its failure fatal) receive
+`<scope-or-host> <url> <local-commit> <deployed-commit>`; the pre hook also gets
+the NUL-separated `A path` / `D path` change list on stdin.
+
+`--lock` writes `git-ftp.lck` on the remote for the duration of the deploy;
+another deploy of a different commit is refused with exit 7. `git ftp unlock`
+removes a stale lock.
+
+### download, pull, snapshot
+
+These mirror the remote into the working tree:
+
+```sh
+git ftp download   # remote -> working tree (refuses to run with untracked files)
+git ftp pull       # download into a commit on the deployed revision, then merge
+git ftp snapshot ftp://example.com/htdocs [dir]   # new repository from a remote
+```
+
+`--changed-only` limits `pull` to files that changed locally as well;
+`--no-commit` (or `git-ftp.no-commit`) leaves the merge uncommitted.
+
+### Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | success |
+| 1 | unexpected error |
+| 2 | wrong usage |
+| 3 | missing argument |
+| 4 | error while uploading (also: remote unreachable, login failed) |
+| 5 | error while downloading (also: `push` before `init`) |
+| 6 | unknown protocol |
+| 7 | remote locked |
+| 8 | git error (not a repository, dirty working tree, bad branch) |
+| 9 | hook failed |
+| 10 | local filesystem error |
+| 130 | interrupted |
+
+### Shell completion
+
+```sh
+eval "$(_GIT_FTP_COMPLETE=bash_source git-ftp)"   # zsh: zsh_source, fish: fish_source
+```
+
+## Development
+
+```sh
+uv sync --all-groups
+make lint typecheck test          # ruff, mypy, pytest (in-process FTP/FTPS/SFTP servers)
+make test-docker                  # pure-ftpd containers, Linux only
+```
+
+The manual page source is `docs/git-ftp.1.md` (`make man` renders it with
+pandoc).
+
+## License
+
+GPL-3.0-or-later

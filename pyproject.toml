@@ -1,0 +1,155 @@
+[build-system]
+requires = ["hatchling>=1.27", "hatch-vcs>=0.5"]
+build-backend = "hatchling.build"
+
+[project]
+name = "git-ftp"
+dynamic = ["version"]
+description = "Git powered FTP/FTPS/FTPES/SFTP client: deploy a Git repository by uploading only the files that changed since the last deployment. Native Python port of git-ftp."
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [{ name = "René Moser", email = "mail@renemoser.net" }]
+requires-python = ">=3.10"
+keywords = ["git", "ftp", "ftps", "sftp", "deploy", "deployment", "git-ftp"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Internet :: File Transfer Protocol (FTP)",
+  "Topic :: Software Development :: Version Control :: Git",
+  "Topic :: System :: Software Distribution",
+  "Typing :: Typed",
+]
+dependencies = [
+  "click>=8.2,<9",
+  "pycurl>=7.46,<8",
+  "paramiko>=3.4,<6",
+]
+
+[project.urls]
+Homepage = "https://github.com/resmo/git-ftp"
+Documentation = "https://github.com/resmo/git-ftp/blob/main/docs/git-ftp.1.md"
+Changelog = "https://github.com/resmo/git-ftp/blob/main/CHANGELOG.md"
+Issues = "https://github.com/resmo/git-ftp/issues"
+Upstream = "https://github.com/git-ftp/git-ftp"
+
+[project.scripts]
+git-ftp = "gitftp.cli:main"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-cov>=6.0",
+  "pytest-timeout>=2.4",
+  "pyftpdlib[ssl]>=2.2",
+  "pyOpenSSL>=24.2.1",
+  "cryptography>=43",
+  "ruff>=0.12",
+  "mypy>=1.17",
+  "types-paramiko>=3.4",
+  "types-pycurl>=7.45",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+version_scheme = "guess-next-dev"
+local_scheme = "node-and-date"
+fallback_version = "0.0.0"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/gitftp/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gitftp"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/gitftp", "tests", "docs", "README.md", "COMPATIBILITY.md", "CHANGELOG.md", "LICENSE", "Makefile",
+]
+exclude = ["src/gitftp/_version.py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "B", "SIM", "RUF", "T20"]
+ignore = ["RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/gitftp/output.py" = ["T20"]
+"tests/**" = ["B011", "SIM117", "T20"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["gitftp", "tests"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["src", "tests/helpers", "tests/fakes", "tests/conftest.py"]
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+mypy_path = ["src"]
+
+[[tool.mypy.overrides]]
+module = ["pyftpdlib", "pyftpdlib.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["tests.helpers.ftpserver"]
+disallow_subclassing_any = false
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers --strict-config"
+xfail_strict = true
+timeout = 120
+markers = [
+  "docker: needs the pure-ftpd containers from the docker-integration job (GIT_FTP_TEST_FTP_ADDR)",
+  "slow: takes more than a few seconds",
+  "ftp: starts an in-process pyftpdlib server",
+  "sftp: starts an in-process paramiko server",
+]
+filterwarnings = [
+  "ignore::pytest.PytestUnhandledThreadExceptionWarning",
+  "ignore:.*asyncore.*:DeprecationWarning",
+  "ignore:.*asynchat.*:DeprecationWarning",
+]
+log_level = "WARNING"
+
+[tool.coverage.run]
+source = ["gitftp"]
+branch = true
+omit = ["src/gitftp/_version.py", "src/gitftp/__main__.py"]
+parallel = true
+concurrency = ["thread", "multiprocessing"]
+
+[tool.coverage.paths]
+source = ["src/gitftp", "*/site-packages/gitftp"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_also = [
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+  "@overload",
+  "if sys.platform == .win32.:",
+]

@@ -1,0 +1,27 @@
+services:
+  ftpd:
+    image: stilliard/pure-ftpd:hardened
+    network_mode: host
+    environment:
+      PUBLICHOST: 127.0.0.1
+      FTP_USER_NAME: gitftp
+      FTP_USER_PASS: s3cret
+      FTP_USER_HOME: /home/gitftp
+      ADDED_FLAGS: "--passiveportrange 30000:30009"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "nc -z 127.0.0.1 21"]
+      interval: 2s
+      retries: 15
+  ftpd-badpasv:
+    image: stilliard/pure-ftpd:hardened
+    network_mode: host
+    environment:
+      PUBLICHOST: 10.255.255.1
+      FTP_USER_NAME: gitftp
+      FTP_USER_PASS: s3cret
+      FTP_USER_HOME: /home/gitftp
+      ADDED_FLAGS: "--passiveportrange 30010:30019 --bind 127.0.0.1,2121"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "nc -z 127.0.0.1 2121"]
+      interval: 2s
+      retries: 15
