@@ -1,5 +1,10 @@
 # git-ftp (Python)
 
+[![test](https://github.com/git-ftp/git-ftp-py/actions/workflows/test.yml/badge.svg)](https://github.com/git-ftp/git-ftp-py/actions/workflows/test.yml)
+[![PyPI](https://img.shields.io/pypi/v/git-ftp.svg)](https://pypi.org/project/git-ftp/)
+[![Python versions](https://img.shields.io/pypi/pyversions/git-ftp.svg)](https://pypi.org/project/git-ftp/)
+[![License](https://img.shields.io/pypi/l/git-ftp.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 This is a native Python port of the Bash [git-ftp](https://github.com/git-ftp/git-ftp): deploy a
 Git repository to a server over **FTP, FTPS, FTPES or SFTP**, uploading only the
 files that changed since the last deployment.
@@ -22,7 +27,7 @@ kept, fixed and added.
 ## Install
 
 ```sh
-uv tool install git-ftp      # or: pipx install git-ftp, pip install git-ftp
+pip install git-ftp # or: pipx install git-ftp, uv tool install git-ftp
 git ftp --version
 ```
 
