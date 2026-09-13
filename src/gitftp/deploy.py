@@ -20,6 +20,7 @@ from gitftp.gitrepo import UnknownCommit
 from gitftp.hooks import POST_PUSH, PRE_PUSH, run_hook
 from gitftp.lock import RemoteLock
 from gitftp.options import CliOptions
+from gitftp.progress import Progress
 from gitftp.session import Session
 from gitftp.transfer import DeleteTask, TransferError, TransferPool, UploadTask
 from gitftp.transport import registry
@@ -297,7 +298,8 @@ class _Run:
             if uploads and not self.opts.dry_run:
                 out.info("Uploading ...")
                 try:
-                    pool.upload(uploads)
+                    with Progress(out, "Uploading", len(uploads)) as p:
+                        pool.upload(uploads, on_done=p.advance)
                 except TransferError as e:
                     raise UploadError(f"Could not upload files. {e}") from e
             for path in cs.deletes:
@@ -306,7 +308,8 @@ class _Run:
                 deletes.append(DeleteTask(remote=csmod.remote_path(path, s.syncroot), label=path))
             if deletes and not self.opts.dry_run:
                 out.info("Deleting ...")
-                errors = pool.delete(deletes)
+                with Progress(out, "Deleting", len(deletes)) as p:
+                    errors = pool.delete(deletes, on_done=p.advance)
                 for err in errors:
                     out.debug(f"Could not delete {err.label}, continuing... ({err.cause})")
                 if errors:

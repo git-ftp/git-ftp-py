@@ -85,6 +85,9 @@ fixed rather than reproduced.
 - `--password` as an alias of `--passwd`; `--no-post-hooks`.
 - Ctrl-C stops the transfers promptly and exits with 130.
 - `version -v` prints the libcurl and paramiko versions in use.
+- An interactive terminal shows a progress spinner with a `done/total` count
+  while files upload, delete or download; it renders on stderr and is silent
+  when output is not a terminal or under `-n`.
 - `--worktree` / `git-ftp.worktree`: `init` and `push` read the upload from a
   temporary Git worktree checked out at the deployed commit, so edits to the
   working tree during the upload cannot leak in. Untracked files added by

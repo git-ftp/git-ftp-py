@@ -478,6 +478,7 @@ dependencies = [
     { name = "click" },
     { name = "paramiko" },
     { name = "pycurl" },
+    { name = "yaspin" },
 ]
 
 [package.dev-dependencies]
@@ -499,6 +500,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.2,<9" },
     { name = "paramiko", specifier = ">=3.4,<6" },
     { name = "pycurl", specifier = ">=7.46,<8" },
+    { name = "yaspin", specifier = ">=3.5,<4" },
 ]
 
 [package.metadata.requires-dev]
@@ -997,6 +999,15 @@ wheels = [
 ]
 
 [[package]]
+name = "termcolor"
+version = "3.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/46/79/cf31d7a93a8fdc6aa0fbb665be84426a8c5a557d9240b6239e9e11e35fc5/termcolor-3.3.0.tar.gz", hash = "sha256:348871ca648ec6a9a983a13ab626c0acce02f515b9e1983332b17af7979521c5", size = 14434, upload-time = "2025-12-29T12:55:21.882Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/33/d1/8bb87d21e9aeb323cc03034f5eaf2c8f69841e40e4853c2627edf8111ed3/termcolor-3.3.0-py3-none-any.whl", hash = "sha256:cf642efadaf0a8ebbbf4bc7a31cec2f9b5f21a9f726f4ccbb08192c9c26f43a5", size = 7734, upload-time = "2025-12-29T12:55:20.718Z" },
+]
+
+[[package]]
 name = "tomli"
 version = "2.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1078,4 +1089,16 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f6/cc/6253133b5bb138fc3306cebfbda2c520f545d36b5be2c7255cc528bb45d6/typing_extensions-4.16.0.tar.gz", hash = "sha256:dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5", size = 113555, upload-time = "2026-07-02T08:40:05.92Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl", hash = "sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8", size = 45571, upload-time = "2026-07-02T08:40:04.659Z" },
+]
+
+[[package]]
+name = "yaspin"
+version = "3.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "termcolor" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a7/67/065003157da680eacd9225ffb92943d0f579a192961ea6c29ebfd258647f/yaspin-3.5.0.tar.gz", hash = "sha256:736d08081bcfc1a18e0c0610939f9cb419441f305ff5d50055d0e4688b36baf9", size = 44051, upload-time = "2026-09-06T18:14:47.156Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/19/b6/cc8809db183b011e0cfb49998358b3a3547fa8448bad3f1761a26c8d1e9a/yaspin-3.5.0-py3-none-any.whl", hash = "sha256:e7bce1ee10b5702b03b8cb3ef18793bb0613f0808d0829b26e3f763290f4a57d", size = 22768, upload-time = "2026-09-06T18:14:45.934Z" },
 ]
