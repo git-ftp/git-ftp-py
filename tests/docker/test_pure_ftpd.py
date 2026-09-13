@@ -72,6 +72,9 @@ def test_download_round_trip(run_cli: RunCli, repo: Repo, site: str) -> None:
     assert run_cli("init", *_auth(), url).code == 0
     repo.rm("test 1.txt")
     repo.commit("rm locally")
-    r = run_cli("download", *_auth(), url)
+    # Sequential download: this pure-ftpd fixture allows only 5 connections per IP
+    # (-c 5 -C 5), and a parallel scan-then-download can brush that limit and stall
+    # a data connection. The parallel download path is covered by the pyftpdlib tests.
+    r = run_cli("download", "-j", "1", *_auth(), url)
     assert r.code == 0, r
     assert repo.exists("test 1.txt")
