@@ -172,6 +172,37 @@ make test-docker                  # pure-ftpd containers, Linux only
 The manual page source is `docs/git-ftp.1.md` (`make man` renders it with
 pandoc).
 
+## Releasing
+
+The version is derived from the Git tag by `hatch-vcs`; there is no version
+string to edit. Pushing a `v*` tag runs `.github/workflows/publish.yml`, which
+builds the sdist and wheel and publishes them to PyPI via Trusted Publishing (no
+API token), then creates a GitHub release whose notes are the matching
+`CHANGELOG.md` section.
+
+One-time setup: on PyPI (and TestPyPI) add a Trusted Publisher for this
+repository with workflow `publish.yml` and environment `pypi` (`testpypi`), and
+create those two environments in the GitHub repository settings.
+
+To cut a release:
+
+```sh
+# 1. Move the entries under "## [Unreleased]" into a new "## [X.Y.Z]" section
+#    in CHANGELOG.md, then commit.
+$EDITOR CHANGELOG.md
+git add CHANGELOG.md
+git commit -m "Release X.Y.Z"
+
+# 2. Tag and push. The tag must be v<version>; the workflow checks that it
+#    matches the version hatch-vcs computes.
+git tag -a -m "Release X.Y.Z" vX.Y.Z
+git push origin main vX.Y.Z
+```
+
+Between tags, builds report a development version such as `X.Y.Z.devN+g<hash>`.
+To rehearse against TestPyPI without tagging, run the `publish` workflow manually
+(`workflow_dispatch`) with the TestPyPI option enabled.
+
 ## License
 
 GPL-3.0-or-later
