@@ -117,12 +117,12 @@ jobs:
             -e PUBLICHOST=127.0.0.1 \
             -e FTP_USER_NAME=gitftp -e FTP_USER_PASS=s3cret -e FTP_USER_HOME=/home/gitftp \
             -e ADDED_FLAGS="--passiveportrange 30000:30009" \
-            stilliard/pure-ftpd:hardened
+            stilliard/pure-ftpd:latest
           docker run -d --name ftpd-badpasv --network host \
             -e PUBLICHOST=10.255.255.1 \
             -e FTP_USER_NAME=gitftp -e FTP_USER_PASS=s3cret -e FTP_USER_HOME=/home/gitftp \
             -e ADDED_FLAGS="--passiveportrange 30010:30019 --bind 127.0.0.1,2121" \
-            stilliard/pure-ftpd:hardened
+            stilliard/pure-ftpd:latest
           for port in 21 2121; do
             for i in $(seq 1 30); do nc -z 127.0.0.1 $port && break; sleep 1; done
             nc -z 127.0.0.1 $port
