@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [2.0.0.dev0] 2026-09-13
+## [2.0.0.dev1] 2026-09-13
 
 First release: a native Python3 port of git-ftp 1.6.0. See [COMPATIBILITY.md](COMPATIBILITY.md) for what is unchanged, what was fixed and what is new.
 
