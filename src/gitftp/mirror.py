@@ -15,6 +15,7 @@ from gitftp.ignore import IgnoreRules
 from gitftp.lock import LOCK_FILE, RemoteLock
 from gitftp.options import CliOptions
 from gitftp.output import Output
+from gitftp.progress import Progress
 from gitftp.session import Session, open_session
 from gitftp.transfer import DownloadTask, TransferError, TransferPool
 from gitftp.transport import registry
@@ -204,7 +205,8 @@ def apply_plan(
         d.mkdir(parents=True, exist_ok=True)
     if plan.downloads:
         try:
-            pool.download(plan.downloads)
+            with Progress(out, "Downloading", len(plan.downloads)) as prog:
+                pool.download(plan.downloads, on_done=prog.advance)
         except TransferError as e:
             raise DownloadError(f"Could not download files. {e}") from e
     out.info(f"Downloaded {len(plan.downloads)} file(s), deleted {deleted} local file(s).")

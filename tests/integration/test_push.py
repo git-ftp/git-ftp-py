@@ -258,10 +258,10 @@ def _patch_upload_to_edit_live(monkeypatch: pytest.MonkeyPatch, repo: Repo) -> d
     seen: dict[str, object] = {}
     original = tr.TransferPool.upload
 
-    def patched(self: tr.TransferPool, tasks: list[tr.UploadTask]) -> None:
+    def patched(self: tr.TransferPool, tasks: list[tr.UploadTask], **kw: object) -> None:
         seen["locals"] = [str(t.local) for t in tasks]
         (repo.path / "test 1.txt").write_text("LIVEedit!\n")
-        original(self, tasks)
+        original(self, tasks, **kw)  # type: ignore[arg-type]
 
     monkeypatch.setattr(tr.TransferPool, "upload", patched)
     return seen

@@ -152,12 +152,13 @@ class TransferPool:
         *,
         fail_fast: bool = True,
         label: Callable[[T], str] = str,
+        on_done: Callable[[str], None] | None = None,
     ) -> list[R | TransferError | _Skipped]:
         if not items:
             return []
         if self.jobs == 1 or len(items) == 1:
-            return self._map_serial(fn, items, fail_fast=fail_fast, label=label)
-        return self._map_parallel(fn, items, fail_fast=fail_fast, label=label)
+            return self._map_serial(fn, items, fail_fast=fail_fast, label=label, on_done=on_done)
+        return self._map_parallel(fn, items, fail_fast=fail_fast, label=label, on_done=on_done)
 
     def _map_serial(
         self,
@@ -166,6 +167,7 @@ class TransferPool:
         *,
         fail_fast: bool,
         label: Callable[[T], str],
+        on_done: Callable[[str], None] | None = None,
     ) -> list[R | TransferError | _Skipped]:
         results: list[R | TransferError | _Skipped] = []
         t = self._primary()
@@ -182,6 +184,9 @@ class TransferPool:
                 if fail_fast:
                     raise err from e
                 results.append(err)
+            else:
+                if on_done is not None:
+                    on_done(label(item))
         return results
 
     def _run_one(self, fn: Callable[[Transport, T], R], item: T) -> R | _Skipped:
@@ -204,6 +209,7 @@ class TransferPool:
         *,
         fail_fast: bool,
         label: Callable[[T], str],
+        on_done: Callable[[str], None] | None = None,
     ) -> list[R | TransferError | _Skipped]:
         workers = min(self.jobs, len(items))
         executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="git-ftp")
@@ -219,13 +225,17 @@ class TransferPool:
                 for fut in done:
                     idx = futures.index(fut)
                     try:
-                        results[fut] = fut.result()
+                        result = fut.result()
                     except Exception as e:
                         err = TransferError(label(items[idx]), e)
                         results[fut] = err
                         if fail_fast and first_error is None:
                             first_error = err
                             self._cancel.set()
+                    else:
+                        results[fut] = result
+                        if on_done is not None and not isinstance(result, _Skipped):
+                            on_done(label(items[idx]))
         except BaseException:
             self._cancel.set()
             executor.shutdown(wait=False, cancel_futures=True)
@@ -236,22 +246,30 @@ class TransferPool:
         return [results[f] for f in futures]
 
     # -- typed helpers -----------------------------------------------------
-    def upload(self, tasks: Sequence[UploadTask]) -> None:
+    def upload(
+        self, tasks: Sequence[UploadTask], *, on_done: Callable[[str], None] | None = None
+    ) -> None:
         def do(t: Transport, task: UploadTask) -> None:
             t.put(task.local, task.remote, task.size)
             self.out.debug(f"Uploaded '{task.label}'.")
 
-        self.map(do, tasks, fail_fast=True, label=lambda task: task.label)
+        self.map(do, tasks, fail_fast=True, label=lambda task: task.label, on_done=on_done)
 
-    def delete(self, tasks: Sequence[DeleteTask]) -> list[TransferError]:
+    def delete(
+        self, tasks: Sequence[DeleteTask], *, on_done: Callable[[str], None] | None = None
+    ) -> list[TransferError]:
         def do(t: Transport, task: DeleteTask) -> None:
             t.delete(task.remote)
             self.out.debug(f"Deleted '{task.label}'.")
 
-        results = self.map(do, tasks, fail_fast=False, label=lambda task: task.label)
+        results = self.map(
+            do, tasks, fail_fast=False, label=lambda task: task.label, on_done=on_done
+        )
         return [r for r in results if isinstance(r, TransferError)]
 
-    def download(self, tasks: Sequence[DownloadTask]) -> None:
+    def download(
+        self, tasks: Sequence[DownloadTask], *, on_done: Callable[[str], None] | None = None
+    ) -> None:
         def do(t: Transport, task: DownloadTask) -> None:
             part = task.local.with_name(f".{task.local.name}.git-ftp-part")
             task.local.parent.mkdir(parents=True, exist_ok=True)
@@ -266,4 +284,4 @@ class TransferPool:
                 raise
             self.out.debug(f"Downloaded '{task.label}'.")
 
-        self.map(do, tasks, fail_fast=True, label=lambda task: task.label)
+        self.map(do, tasks, fail_fast=True, label=lambda task: task.label, on_done=on_done)
