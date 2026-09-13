@@ -167,6 +167,11 @@ Git runs the program as *git ftp* when *git-ftp* is on the PATH.
 *--auto-init*
 :   *push*: behave like *init* when the server has no log yet.
 
+*--worktree*
+:   Read the files to upload from a temporary Git worktree checked out at the
+    commit being deployed, so edits to the working tree during the upload are
+    ignored.
+
 *--version*
 :   Print the version and exit.
 
@@ -206,6 +211,7 @@ Every option can be stored in the Git configuration:
     git config git-ftp.no-commit true
     git config git-ftp.deployedsha1file .git-ftp.log
     git config git-ftp.jobs 8
+    git config git-ftp.worktree true
 
 The same keys may be placed in a *.git-ftp-config* file in the repository,
 which takes precedence over the Git configuration.
@@ -271,6 +277,16 @@ Files are transferred over several connections at once (*--jobs*, default 4).
 Uploads happen first, then deletes, then the log is written. The first failed
 upload aborts the deploy with exit code 4 and the log is left untouched; a
 failed delete is only a warning. Ctrl-C stops the transfers and exits with 130.
+
+# WORKTREE
+
+With *--worktree* (or *git config git-ftp.worktree true*) *init* and *push* check
+the deployed commit out into a throwaway Git worktree and read the uploaded file
+contents from there. Editing the working tree while a long upload is running then
+cannot change what is deployed. The worktree shares the object store, so only a
+working copy is written to disk; it is removed when the deploy finishes. Untracked
+files added through *.git-ftp-include* are not part of the commit and are read from
+the live working tree as before.
 
 # LOCKING
 

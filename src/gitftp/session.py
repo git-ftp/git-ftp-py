@@ -32,6 +32,7 @@ class Session:
         jobs: int,
         deployed_sha1_file: str,
         syncroot: str,
+        worktree: bool = False,
     ) -> None:
         self.out = out
         self.git = git
@@ -44,6 +45,7 @@ class Session:
         self.jobs = jobs
         self.deployed_sha1_file = deployed_sha1_file
         self.syncroot = syncroot
+        self.worktree = worktree
         self._connector = registry.connector(url, creds, topts, out)
         self._primary: Transport | None = None
 
@@ -100,6 +102,7 @@ class Session:
             jobs=self.jobs,
             deployed_sha1_file=cfg.get("deployedsha1file", DEFAULT_DEPLOYED_SHA1_FILE),
             syncroot="",
+            worktree=self.worktree,
         )
         session.log_settings()
         return session
@@ -189,6 +192,7 @@ def open_session(
         repo, opts.syncroot if opts.syncroot is not None else cfg.get("syncroot")
     )
     deployed_sha1_file = cfg.get("deployedsha1file", DEFAULT_DEPLOYED_SHA1_FILE)
+    worktree = opts.worktree or cfg.get_bool("worktree")
 
     session = Session(
         out=out,
@@ -202,6 +206,7 @@ def open_session(
         jobs=max(1, jobs),
         deployed_sha1_file=deployed_sha1_file,
         syncroot=syncroot,
+        worktree=worktree,
     )
     session.log_settings()
     return session

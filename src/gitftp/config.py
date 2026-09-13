@@ -47,6 +47,7 @@ KEYS = (
     "remote-root",
     "deployedsha1file",
     "jobs",
+    "worktree",
 )
 
 _TRUE = frozenset({"true", "yes", "on", "1"})

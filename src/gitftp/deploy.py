@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import enum
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from gitftp import changeset as csmod
 from gitftp.errors import (
@@ -85,6 +86,7 @@ class _Run:
         self.out = session.out
         self.repo = session.require_repo()
         self.url = session.url
+        self._source_root: Path = self.repo.root
 
     # -- entry -------------------------------------------------------------
     def run(self) -> DeployResult:
@@ -152,7 +154,7 @@ class _Run:
         )
         lock.acquire()
         try:
-            self._sync(cs)
+            self._run_sync(cs, local)
             self._upload_log(local, deployed)
         finally:
             lock.release()
@@ -240,6 +242,29 @@ class _Run:
             raise Aborted()
         return csmod.build(repo, syncroot, deployed, True, out)
 
+    def _run_sync(self, cs: csmod.ChangeSet, local: str) -> None:
+        """Read the upload from a temporary worktree when ``--worktree`` is set."""
+        if self.session.worktree and not self.opts.dry_run and cs.uploads:
+            self.out.debug("Creating a temporary worktree for a consistent upload.")
+            with self.repo.temporary_worktree(local) as tree:
+                self._source_root = tree
+                try:
+                    self._sync(cs)
+                finally:
+                    self._source_root = self.repo.root
+        else:
+            self._sync(cs)
+
+    def _source(self, path: str) -> Path:
+        """Where to read the bytes of ``path`` from.
+
+        Tracked files come from the worktree (``_source_root``); an untracked file
+        added by ``.git-ftp-include`` is not in the commit, so it falls back to the
+        live working tree.
+        """
+        candidate = self._source_root / path
+        return candidate if candidate.exists() else self.repo.root / path
+
     def _sync(self, cs: csmod.ChangeSet) -> None:
         out, s = self.out, self.session
         total = cs.total()
@@ -255,7 +280,7 @@ class _Run:
             if path in cs.submodules:
                 self._sync_submodule(path)
                 continue
-            local = self.repo.root / path
+            local = self._source(path)
             if local.is_dir():
                 out.debug(f"Skipping directory '{path}'.")
                 continue

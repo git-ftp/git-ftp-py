@@ -107,6 +107,13 @@ happen first, then deletes, and the commit log is written last, only when every
 upload succeeded, so an interrupted deploy never claims a commit it did not
 finish. Ctrl-C stops promptly.
 
+### Consistent uploads while editing
+
+`--worktree`, or `git config git-ftp.worktree true`, reads the files to upload
+from a throwaway Git worktree checked out at the commit being deployed. Editing
+the working tree while a long upload runs then cannot change what is sent. The
+worktree is removed when the deploy finishes.
+
 ### Hooks and locking
 
 `.git/hooks/pre-ftp-push` (veto with a non-zero exit; skipped by `--no-verify`)

@@ -10,8 +10,11 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
-from collections.abc import Sequence
+import tempfile
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from pathlib import Path
 
 from gitftp.errors import GitError
@@ -231,6 +234,28 @@ class GitRepo(GitRunner):
 
     def stash_pop(self) -> None:
         self.run("stash", "pop", "-q")
+
+    @contextmanager
+    def temporary_worktree(self, ref: str) -> Iterator[Path]:
+        """Check ``ref`` out into a throwaway detached worktree, then remove it.
+
+        The worktree shares the object store, so only the working copy is written
+        to disk. Reading upload contents from it isolates a deploy from edits made
+        to the live working tree while the transfer is running.
+        """
+        parent = Path(tempfile.mkdtemp(prefix="git-ftp-worktree-"))
+        tree = parent / "tree"  # must not pre-exist: git worktree add creates it
+        try:
+            self.run("worktree", "add", "--detach", "--quiet", str(tree), ref)
+        except GitError:
+            shutil.rmtree(parent, ignore_errors=True)
+            raise
+        try:
+            yield tree
+        finally:
+            self.run("worktree", "remove", "--force", str(tree), ok_codes=())
+            self.run("worktree", "prune", ok_codes=())
+            shutil.rmtree(parent, ignore_errors=True)
 
     def add_all(self) -> None:
         self.run("add", "--all")

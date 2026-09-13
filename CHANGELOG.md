@@ -5,6 +5,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- `--worktree` / `git-ftp.worktree`: deploy from a temporary Git worktree so edits
+  to the working tree during an upload are ignored.
+
 ## [1.6.0] - 2026-09-12
 
 First release: a native Python port of git-ftp 1.6.0. See
