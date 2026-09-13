@@ -176,6 +176,12 @@ def common_options(f: F) -> F:
             "--enable-post-errors", is_flag=True, help="Fail when the post-ftp-push hook fails."
         ),
         click.option("--auto-init", is_flag=True, help="push: init when the remote has no log."),
+        click.option(
+            "--worktree",
+            is_flag=True,
+            help="Upload files from a temporary git worktree so edits to the working "
+            "tree during the upload are ignored.",
+        ),
     ]
     for d in reversed(decorators):
         f = d(f)

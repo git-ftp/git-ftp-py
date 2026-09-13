@@ -42,6 +42,7 @@ class CliOptions:
     no_post_hooks: bool = False
     enable_post_errors: bool = False
     auto_init: bool = False
+    worktree: bool = False
 
     @classmethod
     def from_kwargs(cls, kw: dict[str, Any]) -> CliOptions:

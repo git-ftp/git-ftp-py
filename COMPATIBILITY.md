@@ -85,6 +85,11 @@ fixed rather than reproduced.
 - `--password` as an alias of `--passwd`; `--no-post-hooks`.
 - Ctrl-C stops the transfers promptly and exits with 130.
 - `version -v` prints the libcurl and paramiko versions in use.
+- `--worktree` / `git-ftp.worktree`: `init` and `push` read the upload from a
+  temporary Git worktree checked out at the deployed commit, so edits to the
+  working tree during the upload cannot leak in. Untracked files added by
+  `.git-ftp-include` are read from the live working tree, since a worktree of the
+  commit cannot contain them.
 
 ## Behaviour that differs on purpose
 

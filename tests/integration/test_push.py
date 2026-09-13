@@ -249,3 +249,76 @@ def test_env_vars(
     monkeypatch.setenv("GIT_FTP_PASSWORD", s.PASSWORD)
     assert run_cli("init").code == 0
     assert s.remote().log() == repo.head()
+
+
+def _patch_upload_to_edit_live(monkeypatch: pytest.MonkeyPatch, repo: Repo) -> dict[str, object]:
+    """Overwrite the live 'test 1.txt' just before the upload and record task sources."""
+    import gitftp.transfer as tr
+
+    seen: dict[str, object] = {}
+    original = tr.TransferPool.upload
+
+    def patched(self: tr.TransferPool, tasks: list[tr.UploadTask]) -> None:
+        seen["locals"] = [str(t.local) for t in tasks]
+        (repo.path / "test 1.txt").write_text("LIVEedit!\n")
+        original(self, tasks)
+
+    monkeypatch.setattr(tr.TransferPool, "upload", patched)
+    return seen
+
+
+def test_worktree_isolates_upload_from_live_edits(
+    run_cli: RunCli, repo: Repo, ftp_server: FtpServer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    s = ftp_server
+    init(run_cli, s)
+    repo.write("test 1.txt", "committed\n")
+    repo.commit("change")
+    seen = _patch_upload_to_edit_live(monkeypatch, repo)
+    r = run_cli("push", "--worktree", *auth(s), s.url())
+    assert r.code == 0, r
+    assert seen["locals"]
+    assert all("git-ftp-worktree-" in loc for loc in seen["locals"])  # read from the worktree
+    assert s.remote().read("test 1.txt") == "committed\n"  # not the mid-upload edit
+
+
+def test_without_worktree_reads_live_working_tree(
+    run_cli: RunCli, repo: Repo, ftp_server: FtpServer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    s = ftp_server
+    init(run_cli, s)
+    repo.write("test 1.txt", "committed\n")
+    repo.commit("change")
+    seen = _patch_upload_to_edit_live(monkeypatch, repo)
+    r = run_cli("push", *auth(s), s.url())
+    assert r.code == 0, r
+    assert all("git-ftp-worktree-" not in loc for loc in seen["locals"])
+    assert s.remote().read("test 1.txt") == "LIVEedit!\n"  # the vulnerability
+
+
+def test_worktree_from_config(
+    run_cli: RunCli, repo: Repo, ftp_server: FtpServer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    s = ftp_server
+    repo.config("git-ftp.worktree", "true")
+    init(run_cli, s)
+    repo.write("test 1.txt", "committed\n")
+    repo.commit("change")
+    seen = _patch_upload_to_edit_live(monkeypatch, repo)
+    assert run_cli("push", *auth(s), s.url()).code == 0
+    assert all("git-ftp-worktree-" in loc for loc in seen["locals"])
+
+
+def test_worktree_uploads_untracked_include_from_live_tree(
+    run_cli: RunCli, repo: Repo, ftp_server: FtpServer
+) -> None:
+    s = ftp_server
+    repo.write(".gitignore", "built.txt\n")
+    repo.write(".git-ftp-include", "!built.txt\n")
+    repo.commit("include")
+    init(run_cli, s, "--worktree")
+    # built.txt is untracked (gitignored) so it is not in the worktree; it must still upload.
+    repo.write("built.txt", "generated\n")
+    repo.commit("touch")
+    assert run_cli("push", "--worktree", *auth(s), s.url()).code == 0
+    assert s.remote().read("built.txt") == "generated\n"
