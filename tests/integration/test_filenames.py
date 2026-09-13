@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import sys
+
+import pytest
+
 from tests.conftest import RunCli
 from tests.helpers.ftpserver import FtpServer
 from tests.helpers.gitrepo import Repo
@@ -46,12 +50,20 @@ def test_hash_and_space_in_name_upload_and_delete(
 
 
 def test_special_characters(run_cli: RunCli, repo: Repo, ftp_server: FtpServer) -> None:
+    # Characters legal on every filesystem, including NTFS.
     _roundtrip(
         run_cli,
         repo,
         ftp_server,
-        ["100%.txt", "q?.txt", "[b]racket.txt", "semi;colon.txt", "a&b.txt"],
+        ["100%.txt", "[b]racket.txt", "semi;colon.txt", "a&b.txt", "at@sign.txt"],
     )
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="characters illegal in NTFS filenames")
+def test_special_characters_illegal_on_windows(
+    run_cli: RunCli, repo: Repo, ftp_server: FtpServer
+) -> None:
+    _roundtrip(run_cli, repo, ftp_server, ["q?.txt", "star*.txt", "pipe|.txt", "lt<gt>.txt"])
 
 
 def test_unicode_name_upload_and_delete(

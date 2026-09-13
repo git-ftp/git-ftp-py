@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import time
 from collections.abc import Callable
 
 from tests.conftest import RunCli
@@ -125,6 +127,14 @@ def test_download_updates_changed_files_only(
     s = ftp_server
     assert run_cli("init", *auth(s), s.url()).code == 0
     s.remote().write("test 3.txt", "changed size\n")
+    # The remote files carry their upload time, a moment after the local files were
+    # created. On a slow runner that gap exceeds the 1s mtime tolerance and an
+    # unchanged, same-size file would also be pulled. Stamp the local tree into the
+    # future so only the size-changed file is downloaded, regardless of runner speed.
+    future = time.time() + 3600
+    for path in repo.path.rglob("*"):
+        if path.is_file() and ".git" not in path.relative_to(repo.path).parts:
+            os.utime(path, (future, future))
     r = run_cli("download", *auth(s), s.url())
     assert r.code == 0
     assert "Downloaded 1 file(s), deleted 0 local file(s)." in r.stdout

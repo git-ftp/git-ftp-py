@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
@@ -10,6 +11,18 @@ import pytest
 from tests.helpers.certs import Certs, make_certs
 from tests.helpers.ftpserver import FtpServer
 from tests.helpers.sftpserver import SftpServer
+
+# libcurl's Windows wheel uses the Schannel TLS backend, which cannot trust our
+# self-signed test CA via a PEM --cacert (it fails closed on "revocation status
+# unknown"), and its TLS data connection to the in-process pyftpdlib server hangs.
+# FTPS/FTPES is a test-harness incompatibility there, not a git-ftp bug; it stays
+# covered on Linux/macOS (OpenSSL) and by the docker pure-ftpd job.
+_TLS_SKIP_REASON = (
+    "libcurl uses the Schannel TLS backend on Windows; the in-process pyftpdlib "
+    "TLS server is not interoperable (FTPS/FTPES is covered on Linux/macOS and by "
+    "the docker job)"
+)
+_skip_tls_on_windows = pytest.mark.skipif(sys.platform == "win32", reason=_TLS_SKIP_REASON)
 
 
 @pytest.fixture(scope="session")
@@ -42,15 +55,25 @@ def ftp_server(ftp_server_factory: Callable[..., FtpServer]) -> FtpServer:
 
 @pytest.fixture
 def ftpes_server(ftp_server_factory: Callable[..., FtpServer], tls_certs: Certs) -> FtpServer:
+    if sys.platform == "win32":
+        pytest.skip(_TLS_SKIP_REASON)
     return ftp_server_factory("explicit", tls_certs)
 
 
 @pytest.fixture
 def ftps_server(ftp_server_factory: Callable[..., FtpServer], tls_certs: Certs) -> FtpServer:
+    if sys.platform == "win32":
+        pytest.skip(_TLS_SKIP_REASON)
     return ftp_server_factory("implicit", tls_certs)
 
 
-@pytest.fixture(params=["ftp", "ftpes", "ftps"])
+@pytest.fixture(
+    params=[
+        "ftp",
+        pytest.param("ftpes", marks=_skip_tls_on_windows),
+        pytest.param("ftps", marks=_skip_tls_on_windows),
+    ]
+)
 def any_ftp_server(
     request: pytest.FixtureRequest, ftp_server_factory: Callable[..., FtpServer], tls_certs: Certs
 ) -> FtpServer:
