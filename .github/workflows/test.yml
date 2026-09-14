@@ -69,6 +69,16 @@ jobs:
       - name: Unit + integration tests
         shell: bash
         run: uv run pytest -m "not docker" --cov --cov-report=xml --cov-report=term-missing --junitxml=junit.xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@e53489f4d376d79066609109e7a95a29eb3740b1 # v7.0.0
+        if: always()
+        with:
+          # Public repos don't need a token, maybe add later if needed
+          # token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          flags: py${{ matrix.python }}
+          name: py${{ matrix.python }}
+          fail_ci_if_error: false
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:

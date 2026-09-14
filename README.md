@@ -1,6 +1,7 @@
 # git-ftp (Python)
 
 [![test](https://github.com/git-ftp/git-ftp-py/actions/workflows/test.yml/badge.svg)](https://github.com/git-ftp/git-ftp-py/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/git-ftp/git-ftp-py/graph/badge.svg)](https://codecov.io/gh/git-ftp/git-ftp-py)
 [![PyPI](https://img.shields.io/pypi/v/git-ftp.svg)](https://pypi.org/project/git-ftp/)
 [![Python versions](https://img.shields.io/pypi/pyversions/git-ftp.svg)](https://pypi.org/project/git-ftp/)
 [![License](https://img.shields.io/pypi/l/git-ftp.svg)](https://www.gnu.org/licenses/gpl-3.0)
