@@ -17,6 +17,11 @@ env:
   UV_LOCKED: "1"
   PYTHONUTF8: "1"
   FORCE_COLOR: "1"
+  # HEAD often sits past a .devN prerelease tag, which setuptools-scm/hatch-vcs
+  # cannot version ("the <tag> can't be bumped"), so every uv build/sync would
+  # fail. CI builds don't need the real version, so pin one and skip git version
+  # resolution. Releases are versioned by publish.yml from the tag itself.
+  SETUPTOOLS_SCM_PRETEND_VERSION: "0.0.0"
 
 jobs:
   lint:
