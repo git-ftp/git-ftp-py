@@ -17,6 +17,11 @@ env:
   UV_LOCKED: "1"
   PYTHONUTF8: "1"
   FORCE_COLOR: "1"
+  # HEAD often sits past a .devN prerelease tag, which setuptools-scm/hatch-vcs
+  # cannot version ("the <tag> can't be bumped"), so every uv build/sync would
+  # fail. CI builds don't need the real version, so pin one and skip git version
+  # resolution. Releases are versioned by publish.yml from the tag itself.
+  SETUPTOOLS_SCM_PRETEND_VERSION: "0.0.0"
 
 jobs:
   lint:
@@ -69,6 +74,16 @@ jobs:
       - name: Unit + integration tests
         shell: bash
         run: uv run pytest -m "not docker" --cov --cov-report=xml --cov-report=term-missing --junitxml=junit.xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@e53489f4d376d79066609109e7a95a29eb3740b1 # v7.0.0
+        if: always()
+        with:
+          # Public repos don't need a token, maybe add later if needed
+          # token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          flags: py${{ matrix.python }}
+          name: py${{ matrix.python }}
+          fail_ci_if_error: false
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
