@@ -38,11 +38,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/resmo/git-ftp"
-Documentation = "https://github.com/resmo/git-ftp/blob/main/docs/git-ftp.1.md"
-Changelog = "https://github.com/resmo/git-ftp/blob/main/CHANGELOG.md"
-Issues = "https://github.com/resmo/git-ftp/issues"
-Upstream = "https://github.com/git-ftp/git-ftp"
+Homepage = "https://github.com/git-ftp/git-ftp-py"
+Documentation = "https://github.com/git-ftp/git-ftp-py/blob/main/docs/git-ftp.1.md"
+Changelog = "https://github.com/git-ftp/git-ftp-py/blob/main/CHANGELOG.md"
+Issues = "https://github.com/git-ftp/git-ftp-py/issues"
+Upstream = "https://github.com/git-ftp/git-ftp-py"
 
 [project.scripts]
 git-ftp = "gitftp.cli:main"
