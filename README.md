@@ -1,4 +1,4 @@
-# git-ftp (Python)
+# git-ftp v2
 
 [![test](https://github.com/git-ftp/git-ftp-py/actions/workflows/test.yml/badge.svg)](https://github.com/git-ftp/git-ftp-py/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/git-ftp/git-ftp-py/graph/badge.svg)](https://codecov.io/gh/git-ftp/git-ftp-py)
@@ -6,9 +6,9 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/git-ftp.svg)](https://pypi.org/project/git-ftp/)
 [![License](https://img.shields.io/pypi/l/git-ftp.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-This is a native Python port of the Bash [git-ftp](https://github.com/git-ftp/git-ftp): deploy a
+This is a native (and improved) Python port of the Bash [git-ftp](https://github.com/git-ftp/git-ftp),: deploy a
 Git repository to a server over **FTP, FTPS, FTPES or SFTP**, uploading only the
-files that changed since the last deployment.
+files that changed since the last deployment. 
 
 git-ftp records the deployed commit in a file on the remote (`.git-ftp.log`).
 On the next push it diffs that commit against `HEAD` and transfers exactly the
