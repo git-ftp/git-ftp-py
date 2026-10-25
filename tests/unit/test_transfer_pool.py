@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -127,3 +128,41 @@ def test_cancel_event_shared_with_workers(tmp_path: Path) -> None:
         threading.Timer(0.02, pool.cancel).start()
         pool.upload(tasks)  # no error: cancelled tasks are skipped, not failed
     assert len(store.files) < 10
+
+
+def _byte_recorder() -> tuple[dict[str, list[int]], Callable[[str, int], None]]:
+    seen: dict[str, list[int]] = {}
+    lock = threading.Lock()
+
+    def on_bytes(label: str, n: int) -> None:
+        with lock:
+            seen.setdefault(label, []).append(n)
+
+    return seen, on_bytes
+
+
+@pytest.mark.parametrize("jobs", [1, 4])
+def test_upload_reports_bytes(tmp_path: Path, jobs: int) -> None:
+    store = MemoryStore()
+    tasks = make_tasks(tmp_path, 12)
+    seen, on_bytes = _byte_recorder()
+    with TransferPool(store.connect, jobs, Output(Level.SILENT)) as pool:
+        pool.upload(tasks, on_bytes=on_bytes)
+    assert set(seen) == {t.label for t in tasks}
+    for t in tasks:
+        assert seen[t.label][0] == t.size // 2  # the transport's own chunk reports
+        assert seen[t.label][-1] == t.size  # always ends at the full size
+
+
+def test_download_reports_bytes(tmp_path: Path) -> None:
+    store = MemoryStore()
+    store.files["a.txt"] = b"hello"
+    store.files["b.txt"] = b"hi"
+    tasks = [
+        DownloadTask(remote="a.txt", local=tmp_path / "a.txt", size=5, mtime=None, label="a"),
+        DownloadTask(remote="b.txt", local=tmp_path / "b.txt", size=None, mtime=None, label="b"),
+    ]
+    seen, on_bytes = _byte_recorder()
+    with TransferPool(store.connect, 1, Output(Level.SILENT)) as pool:
+        pool.download(tasks, on_bytes=on_bytes)
+    assert seen == {"a": [5, 5], "b": [2]}  # no size top-up when the size is unknown

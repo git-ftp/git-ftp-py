@@ -34,7 +34,7 @@ dependencies = [
   "click>=8.2,<9",
   "pycurl>=7.46,<8",
   "paramiko>=3.4,<6",
-  "yaspin>=3.5,<4",
+  "tqdm>=4.66,<5",
 ]
 
 [project.urls]
@@ -59,6 +59,7 @@ dev = [
   "mypy>=1.17",
   "types-paramiko>=3.4",
   "types-pycurl>=7.45",
+  "types-tqdm>=4.66",
 ]
 
 [tool.uv]
@@ -110,10 +111,6 @@ mypy_path = ["src"]
 
 [[tool.mypy.overrides]]
 module = ["pyftpdlib", "pyftpdlib.*"]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = ["yaspin", "yaspin.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

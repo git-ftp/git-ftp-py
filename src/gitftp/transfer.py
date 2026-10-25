@@ -17,10 +17,19 @@ from pathlib import Path
 from typing import Generic, TypeVar
 
 from gitftp.output import Output
-from gitftp.transport.base import Connector, TransferCancelled, Transport
+from gitftp.transport.base import Connector, ProgressFn, TransferCancelled, Transport
 
 T = TypeVar("T")
 R = TypeVar("R")
+
+BytesFn = Callable[[str, int], None]
+"""Called as ``(label, bytes_done)`` while a file transfers, from the worker thread."""
+
+
+def _bytes_fn(on_bytes: BytesFn | None, label: str) -> ProgressFn | None:
+    if on_bytes is None:
+        return None
+    return lambda done, _total: on_bytes(label, done)
 
 
 @dataclass(frozen=True)
@@ -247,10 +256,16 @@ class TransferPool:
 
     # -- typed helpers -----------------------------------------------------
     def upload(
-        self, tasks: Sequence[UploadTask], *, on_done: Callable[[str], None] | None = None
+        self,
+        tasks: Sequence[UploadTask],
+        *,
+        on_done: Callable[[str], None] | None = None,
+        on_bytes: BytesFn | None = None,
     ) -> None:
         def do(t: Transport, task: UploadTask) -> None:
-            t.put(task.local, task.remote, task.size)
+            t.put(task.local, task.remote, task.size, progress=_bytes_fn(on_bytes, task.label))
+            if on_bytes is not None:
+                on_bytes(task.label, task.size)  # transports may not report the last chunk
             self.out.debug(f"Uploaded '{task.label}'.")
 
         self.map(do, tasks, fail_fast=True, label=lambda task: task.label, on_done=on_done)
@@ -268,16 +283,22 @@ class TransferPool:
         return [r for r in results if isinstance(r, TransferError)]
 
     def download(
-        self, tasks: Sequence[DownloadTask], *, on_done: Callable[[str], None] | None = None
+        self,
+        tasks: Sequence[DownloadTask],
+        *,
+        on_done: Callable[[str], None] | None = None,
+        on_bytes: BytesFn | None = None,
     ) -> None:
         def do(t: Transport, task: DownloadTask) -> None:
             part = task.local.with_name(f".{task.local.name}.git-ftp-part")
             task.local.parent.mkdir(parents=True, exist_ok=True)
             try:
-                t.get_file(task.remote, part)
+                t.get_file(task.remote, part, progress=_bytes_fn(on_bytes, task.label))
                 if task.mtime is not None:
                     os.utime(part, (task.mtime, task.mtime))
                 os.replace(part, task.local)
+                if on_bytes is not None and task.size is not None:
+                    on_bytes(task.label, task.size)
             except BaseException:
                 with contextlib.suppress(OSError):
                     part.unlink()

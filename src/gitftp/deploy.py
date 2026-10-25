@@ -298,8 +298,9 @@ class _Run:
             if uploads and not self.opts.dry_run:
                 out.info("Uploading ...")
                 try:
-                    with Progress(out, "Uploading", len(uploads)) as p:
-                        pool.upload(uploads, on_done=p.advance)
+                    size = sum(u.size for u in uploads)
+                    with Progress(out, "Uploading", len(uploads), size=size) as p:
+                        pool.upload(uploads, on_done=p.advance, on_bytes=p.transferred)
                 except TransferError as e:
                     raise UploadError(f"Could not upload files. {e}") from e
             for path in cs.deletes:
