@@ -66,6 +66,8 @@ class MemoryTransport(Transport):
     def get_file(self, path: str, local: Path, *, progress: ProgressFn | None = None) -> None:
         data = self.get(path)
         local.write_bytes(data)
+        if progress is not None:
+            progress(len(data), len(data))
 
     def _enter(self) -> None:
         with self.store.lock:
@@ -79,7 +81,12 @@ class MemoryTransport(Transport):
     def put(
         self, local: Path, remote: str, size: int, *, progress: ProgressFn | None = None
     ) -> None:
-        self.put_bytes(local.read_bytes(), remote)
+        data = local.read_bytes()
+        if progress is not None:
+            progress(len(data) // 2, size)
+        self.put_bytes(data, remote)
+        if progress is not None:
+            progress(len(data), size)
 
     def put_bytes(self, data: bytes, remote: str) -> None:
         self._enter()

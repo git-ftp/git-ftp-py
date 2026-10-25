@@ -205,8 +205,11 @@ def apply_plan(
         d.mkdir(parents=True, exist_ok=True)
     if plan.downloads:
         try:
-            with Progress(out, "Downloading", len(plan.downloads)) as prog:
-                pool.download(plan.downloads, on_done=prog.advance)
+            sizes = [d.size for d in plan.downloads]
+            # A byte bar only when the listing reported every size; else count files.
+            size = None if None in sizes else sum(n or 0 for n in sizes)
+            with Progress(out, "Downloading", len(plan.downloads), size=size) as prog:
+                pool.download(plan.downloads, on_done=prog.advance, on_bytes=prog.transferred)
         except TransferError as e:
             raise DownloadError(f"Could not download files. {e}") from e
     out.info(f"Downloaded {len(plan.downloads)} file(s), deleted {deleted} local file(s).")

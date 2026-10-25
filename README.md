@@ -113,8 +113,8 @@ happen first, then deletes, and the commit log is written last, only when every
 upload succeeded, so an interrupted deploy never claims a commit it did not
 finish. Ctrl-C stops promptly.
 
-In an interactive terminal a spinner shows a `done/total` count with the current
-file on stderr. It is off when output is piped, in CI, or under `-n`, so scripts
+In an interactive terminal a progress bar on stderr shows the bytes transferred
+with rate and ETA, plus a `done/total` file count and the current file. It is off when output is piped, in CI, or under `-n`, so scripts
 see the plain lines unchanged.
 
 ### Consistent uploads while editing

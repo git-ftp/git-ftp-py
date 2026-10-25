@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Changed
+- The progress spinner (yaspin) is replaced by a progress bar (tqdm): uploads and downloads show bytes transferred with rate and ETA plus the `done/total` file count; deletes, and downloads whose sizes the listing did not report, count files.
+
 ## [2.0.0] 2026-09-20
 
 First release: a native Python3 port of git-ftp 1.6.0. See [COMPATIBILITY.md](COMPATIBILITY.md) for what is unchanged, what was fixed and what is new.

@@ -94,16 +94,16 @@ def test_ctrl_c_stops_promptly_and_leaves_log_untouched(
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="pty is POSIX-only")
-def test_progress_spinner_on_a_tty_leaves_stdout_intact(
+def test_progress_bar_on_a_tty_leaves_stdout_intact(
     repo: Repo, ftp_server: FtpServer, cli_bin: list[str]
 ) -> None:
-    """With stderr on a real terminal the spinner is active, yet stdout still
-    carries the exact, parseable messages (the spinner draws only on stderr)."""
+    """With stderr on a real terminal the progress bar is active, yet stdout still
+    carries the exact, parseable messages (the bar draws only on stderr)."""
     import pty
     import threading
 
     s = ftp_server
-    master, slave = pty.openpty()  # child stderr is a TTY -> spinner enabled
+    master, slave = pty.openpty()  # child stderr is a TTY -> progress bar enabled
     drained: list[bytes] = []
 
     def drain() -> None:
@@ -130,10 +130,10 @@ def test_progress_spinner_on_a_tty_leaves_stdout_intact(
     stderr = b"".join(drained).decode("utf-8", "replace")
 
     assert proc.returncode == 0, stderr
-    # stdout is unpolluted by the spinner: the upstream lines are exact.
+    # stdout is unpolluted by the progress bar: the upstream lines are exact.
     assert "Uploading ..." in proc.stdout
     assert f"Last deployment changed from  to {repo.head()}." in proc.stdout
     assert "Uploading 0/" not in proc.stdout  # progress text never reaches stdout
     assert s.remote().log() == repo.head()
-    # The spinner rendered its running count on the terminal (stderr).
+    # The bar rendered its progress on the terminal (stderr).
     assert "Uploading" in stderr
