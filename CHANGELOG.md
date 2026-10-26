@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.1.0] 2026-10-26
 
 ### Changed
 - The progress spinner (yaspin) is replaced by a progress bar (tqdm): uploads and downloads show bytes transferred with rate and ETA plus the `done/total` file count; deletes, and downloads whose sizes the listing did not report, count files.
